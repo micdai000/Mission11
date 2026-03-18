@@ -18,11 +18,20 @@ public class BookController : ControllerBase
     }
     
     [HttpGet(Name = "GetBook")]
-    public IEnumerable<Book> Get(int pageHowMany = 5)
+    public IActionResult Get(int pageSize = 5, int pageNum = 1)
     {
-        return _bookContext.Books
-            .Skip(3)
-        .Take(pageHowMany)
-        .ToList();
+        var something = _bookContext.Books
+            .Skip((pageNum - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+        
+        var totalNumBooks = _bookContext.Books.Count();
+
+        var someObject = new
+        {
+            Books = something,
+            totalNumBooks = totalNumBooks
+        };
+        return Ok(someObject);
     }
 }
