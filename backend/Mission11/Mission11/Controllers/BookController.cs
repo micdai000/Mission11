@@ -18,8 +18,11 @@ public class BookController : ControllerBase
     }
     
     [HttpGet(Name = "GetBook")]
-    public IEnumerable<Book> Get()
+    public IEnumerable<Book> Get(int pageHowMany = 5)
     {
-        return _bookContext.Books.ToList();
+        return _bookContext.Books
+            .Skip(3)
+        .Take(pageHowMany)
+        .ToList();
     }
 }

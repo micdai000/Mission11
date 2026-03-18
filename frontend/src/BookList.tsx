@@ -3,15 +3,16 @@ import type { Book } from "./types/Book";
 
 function BookList(){
     const [books, setBooks] = useState<Book[]>([]);
+    const [pageSize, setPageSize] = useState<number>(10);
 
     useEffect(() => {
         const fetchProjects = async () => {
-            const response = await fetch("http://localhost:4000/api/Book");
+            const response = await fetch(`http://localhost:4000/api/Book?pageHowMany=${pageSize}`);
             const data = await response.json();
             setBooks(data);
             };
             fetchProjects();
-    }, []);
+    }, [pageSize]);
 
     return (
         <>
@@ -33,6 +34,16 @@ function BookList(){
             </div>
         </div>
         )}
+
+        <br />
+        <label>
+            Results per page:
+            <select value={pageSize} onChange={(p) => setPageSize(Number(p.target.value))}>
+                <option value="5">5</option>
+                <option value="7">7</option>
+                <option value="10">10</option>
+            </select>
+        </label>
         </>
     );
 }
