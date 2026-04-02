@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/6dc8cc95-44a1-411c-8357-b0453fc668b2/resourceGroups/appsvc_windows_northcentralus/providers/Microsoft.Web/sites/Mission13-MichaelDavila-Backend",
+    "appService.deploySubpath": "backend/Mission11/Mission11/publish"
+}

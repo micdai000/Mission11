@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Book } from "../types/Book";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
+import { fetchBooks } from "../api/BooksAPI";
 
 function BookList({selectedCategories}: {selectedCategories: string[]}) {
     const [books, setBooks] = useState<Book[]>([]);
@@ -27,6 +28,8 @@ function BookList({selectedCategories}: {selectedCategories: string[]}) {
     });
     const [totalItems, setTotalItems] = useState<number>(0);
     const [totalPages, setTotalPages] = useState<number>(0);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<string>(() => {
         try {
             const raw = sessionStorage.getItem("books:state");
@@ -51,18 +54,40 @@ function BookList({selectedCategories}: {selectedCategories: string[]}) {
     }, [pageSize, pageNum, sortOrder, selectedCategories]);
 
     useEffect(() => {
-        const fetchProjects = async () => {
-            const categoryParams = selectedCategories.map((cat => `projectTypes=${encodeURIComponent(cat)}`)).join("&");
-            const response = await fetch(
-                `http://localhost:4000/api/Book?pageSize=${pageSize}&pageNum=${pageNum}&sortOrder=${sortOrder}${selectedCategories.length ? `&${categoryParams}` : ""}` // added sortOrder
-            );
-            const data = await response.json();
-                setBooks(data.books);
-                setTotalItems(data.totalNumBooks);
-                setTotalPages(Math.ceil(data.totalNumBooks / pageSize));
-            };
-            fetchProjects();
-        }, [pageSize, pageNum, sortOrder, selectedCategories]); // sortOrder as dependency
+        let cancelled = false;
+
+        const loadBooks = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const data = await fetchBooks(
+                    pageSize,
+                    pageNum,
+                    selectedCategories,
+                    sortOrder
+                );
+                if (!cancelled) {
+                    setBooks(data.books);
+                    setTotalItems(data.totalNumBooks);
+                    setTotalPages(data.totalPages);
+                }
+            } catch (e) {
+                if (!cancelled) {
+                    setError(e instanceof Error ? e.message : "Failed to load books");
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        void loadBooks();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [pageSize, pageNum, sortOrder, selectedCategories]);
 
     const toggleSort = () => {
         setSortOrder(sortOrder === "asc" ? "desc" : "asc"); // toggle between asc/desc
@@ -82,7 +107,12 @@ function BookList({selectedCategories}: {selectedCategories: string[]}) {
         </button>
 
         <br />
+
+        {loading && <p>Loading ...</p>}
+        {error && <p className="text-red-500">Error: {error}</p>}
+
         {/* Bootstrap Grid: row wraps all book slots in one responsive row */}
+        {!loading && !error && (
         <div className="row mt-3">
             {books.map((b) => (
                 <div className="col-md-6 col-lg-4 mb-4" key={b.bookId}>
@@ -120,17 +150,18 @@ function BookList({selectedCategories}: {selectedCategories: string[]}) {
                 </div>
             ))}
         </div>
+        )}
 
-        <button disabled={pageNum === 1} onClick={() => setPageNum(pageNum - 1)}>Previous</button>
+        <button disabled={pageNum === 1 || loading} onClick={() => setPageNum(pageNum - 1)}>Previous</button>
         {[...Array(totalPages)].map((_, i) => (
-            <button key={i + 1} onClick={() => setPageNum(i + 1)} disabled={pageNum === i + 1}>{i + 1}</button>
+            <button key={i + 1} onClick={() => setPageNum(i + 1)} disabled={pageNum === i + 1 || loading}>{i + 1}</button>
         ))}
-        <button disabled={pageNum === totalPages} onClick={() => setPageNum(pageNum + 1)}>Next</button>
+        <button disabled={pageNum === totalPages || loading} onClick={() => setPageNum(pageNum + 1)}>Next</button>
 
         <br />
         <label>
             Results per page:
-            <select value={pageSize} onChange={(p) => { setPageSize(Number(p.target.value)); setPageNum(1); }}>
+            <select value={pageSize} disabled={loading} onChange={(p) => { setPageSize(Number(p.target.value)); setPageNum(1); }}>
                 <option value="5">5</option>
                 <option value="10">10</option>
                 <option value="20">20</option>
