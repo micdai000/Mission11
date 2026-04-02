@@ -9,7 +9,7 @@ const [categories, setCategories] = useState<string[]>([]);
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await fetch("http://localhost:4000/api/Book/GetCategoryTypes");
+                const response = await fetch("https://mission13-michaeldavila-backend-cfgjhuc3crfuf5f0.northcentralus-01.azurewebsites.net/api/Book/GetCategoryTypes");
                 const data = await response.json();
                 console.log(`Fetched Categories: ${data}`);
                 setCategories(data);
